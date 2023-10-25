@@ -1,8 +1,6 @@
 """Sensor platform for integration_blueprint."""
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
-from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.components import bluetooth
 
 from .const import DOMAIN
 from .coordinator import AnovaDataUpdateCoordinator
@@ -13,6 +11,7 @@ from anova_ble import AnovaStatus
 ENTITY_DESCRIPTIONS = (
     SwitchEntityDescription(
         key="timer_active",
+        name="Timer Active",
         icon="mdi:clock",
     ),
 )

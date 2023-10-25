@@ -11,9 +11,9 @@ from homeassistant.helpers.update_coordinator import (
 )
 
 from .const import DOMAIN, LOGGER
+import asyncio
 
 from anova_ble import AnovaBLEPrecisionCooker
-
 
 # https://developers.home-assistant.io/docs/integration_fetching_data#coordinated-single-api-poll-for-data-for-all-entities
 class AnovaDataUpdateCoordinator(DataUpdateCoordinator):
@@ -38,8 +38,11 @@ class AnovaDataUpdateCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self):
         """Update data via library."""
         try:
-            await self.circulator.connect()
-            await self.circulator.update_state()
-            return
+            async with asyncio.timeout(5):
+                await self.circulator.connect()
+                await self.circulator.update_state()
+                LOGGER.debug(f"Updated state: {self.circulator.state}")
+                return
         except Exception as exception:
+            # await self.circulator.disconnect()
             raise UpdateFailed(exception) from exception

@@ -6,9 +6,9 @@ https://github.com/ludeeus/integration_blueprint
 from __future__ import annotations
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import CONF_MAC, Platform
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.exceptions import ConfigEntryError
+from homeassistant.exceptions import ConfigEntryNotReady
 
 from homeassistant.components.bluetooth.match import ADDRESS, BluetoothCallbackMatcher
 
@@ -28,13 +28,15 @@ PLATFORMS: list[Platform] = [
 # https://developers.home-assistant.io/docs/config_entries_index/#setting-up-an-entry
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up this integration using UI."""
-    address = entry.data[CONF_MAC]
+    address: str = entry.unique_id
+    assert address is not None
+
     hass.data.setdefault(DOMAIN, {})
 
-    device = bluetooth.async_ble_device_from_address(hass, address, connectable=True)
+    device = bluetooth.async_ble_device_from_address(hass, address.upper(), connectable=True)
 
     if not device:
-        raise ConfigEntryError("Device not in range")
+        raise ConfigEntryNotReady(f"Device with address {address} not in range.")
 
     anova = AnovaBLEPrecisionCooker(ble_device=device)
 
@@ -59,26 +61,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass=hass,
         circulator=anova
     )
-    # https://developers.home-assistant.io/docs/integration_fetching_data#coordinated-single-api-poll-for-data-for-all-entities
+
     await coordinator.async_config_entry_first_refresh()
 
-    await hass.config_entries.async_forward_entry_setup(entry, Platform.SENSOR)
-    await hass.config_entries.async_forward_entry_setup(entry, Platform.SWITCH)
-    await hass.config_entries.async_forward_entry_setup(entry, Platform.CLIMATE)
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(async_reload_entry))
-
-    # await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    # entry.async_on_unload(entry.add_update_listener(async_reload_entry))
 
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Handle removal of an entry."""
-    # if unloaded := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
-    await hass.config_entries.async_unload_platforms(entry, [Platform.SENSOR, Platform.SWITCH, Platform.CLIMATE])
-    hass.data[DOMAIN].pop(entry.entry_id)
-    return True
+    if unloaded := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
+        hass.data[DOMAIN].pop(entry.entry_id)
+    return unloaded
 
 
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:

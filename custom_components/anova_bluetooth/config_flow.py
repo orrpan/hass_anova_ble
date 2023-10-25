@@ -4,14 +4,14 @@ from __future__ import annotations
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.const import CONF_MAC
-from homeassistant.exceptions import ConfigEntryError
 from homeassistant.helpers import selector, device_registry
 
 from homeassistant.components import bluetooth
 
 from anova_ble import AnovaBLEPrecisionCooker
+from typing import Any
 
-from .const import DOMAIN, LOGGER
+from .const import DOMAIN
 
 
 class AnovaBLEFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
@@ -19,24 +19,37 @@ class AnovaBLEFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
+    def __init__(self):
+        self._discovery_info: bluetooth.BluetoothServiceInfoBleak | None = None
+        self._discovered_address: str | None = None
+
     async def async_step_bluetooth(self, info: bluetooth.BluetoothServiceInfoBleak):
-        await self.async_set_unique_id(device_registry.format_mac(info.address))
+        address = device_registry.format_mac(info.address)
+        await self.async_set_unique_id(address)
         self._abort_if_unique_id_configured()
+
+        if res := await self._validate_anova_device(info.address):
+            return self.async_abort(reason=res)
+
+        self._discovery_info = info
+        self._discovered_address = address
+
+        return await self.async_step_bluetooth_confirm()
+
+    async def async_step_bluetooth_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ):
+        """Confirm discovery."""
+        assert self._discovered_address is not None
+        assert self._discovery_info is not None
+        if user_input is not None:
+            return self.async_create_entry(title="Anova Immersion Circulator", data={})
+
+        self._set_confirm_only()
+        placeholders = {"name": "Anova Immersion Circulator"}
+        self.context["title_placeholders"] = placeholders
         return self.async_show_form(
-            step_id="user",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        CONF_MAC,
-                        default=str(info.address),
-                        description="MAC Address"
-                    ): selector.TextSelector(
-                        selector.TextSelectorConfig(
-                            type=selector.TextSelectorType.TEXT,
-                        ),
-                    )
-                }
-            ),
+            step_id="bluetooth_confirm", description_placeholders=placeholders
         )
 
     async def async_step_user(
@@ -61,11 +74,12 @@ class AnovaBLEFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             else:
                 return self.async_create_entry(
                     title="Anova Immersion Circulator",
-                    data=info,
+                    data={},
                 )
 
         return self.async_show_form(
             step_id="user",
+            last_step=True,
             data_schema=vol.Schema(
                 {
                     vol.Required(
@@ -86,11 +100,11 @@ class AnovaBLEFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
 
         ble_device = bluetooth.async_ble_device_from_address(self.hass, address.upper(), connectable=True)
         if not ble_device:
-            return "No bluetooth device found with that address."
+            return "not_found"
         anova = AnovaBLEPrecisionCooker(ble_device=ble_device)
         try:
             await anova.connect()
             await anova.update_state()
             await anova.disconnect()
         except Exception:
-            return "Device not a supported Anova circulator."
+            return "unsupported"

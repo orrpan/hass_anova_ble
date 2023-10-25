@@ -2,7 +2,6 @@
 from homeassistant.components.climate import ClimateEntity, ClimateEntityDescription, ClimateEntityFeature
 from homeassistant.components.climate.const import HVAC_MODE_HEAT, HVAC_MODE_OFF
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.components import bluetooth
 from homeassistant.const import UnitOfTemperature
 
 from .const import DOMAIN
@@ -18,7 +17,8 @@ async def async_setup_entry(hass, entry: ConfigEntry, async_add_devices):
         AnovaBluetoothClimate(
             coordinator=coordinator,
             entity_description=ClimateEntityDescription(
-                key="bath_control"
+                key="water_bath",
+                name="Sous Vide"
             )
         )
     ])

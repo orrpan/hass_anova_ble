@@ -1,6 +1,11 @@
 {
   "domain": "anova_bluetooth",
   "name": "Anova Bluetooth",
+  "bluetooth": [
+    {
+      "local_name": "Anova"
+    }
+  ],
   "codeowners": [
     "@ninjawarrior1337"
   ],
@@ -8,16 +13,11 @@
   "dependencies": [
     "bluetooth_adapters"
   ],
-  "requirements": [
-    "anova_ble==0.1.4"
-  ],
-  "bluetooth": [
-    {
-      "local_name": "Anova"
-    }
-  ],
   "documentation": "https://github.com/ninjawarrior1337/hass_anova_ble",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/ninjawarrior1337/hass_anova_ble/issues",
+  "requirements": [
+    "anova_ble==0.1.6"
+  ],
   "version": "0.0.1"
 }

@@ -1,9 +1,10 @@
 """Sensor platform for integration_blueprint."""
 from __future__ import annotations
 
-from homeassistant.components.sensor import SensorEntity, SensorEntityDescription, SensorDeviceClass, SensorStateClass
+from homeassistant.components.sensor import SensorEntity, SensorEntityDescription, SensorDeviceClass
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import UnitOfTemperature, UnitOfTime
+from homeassistant.const import UnitOfTime
+from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
 from .coordinator import AnovaDataUpdateCoordinator
@@ -11,16 +12,16 @@ from .entity import AnovaBluetoothEntity
 
 ENTITY_DESCRIPTIONS = (
     SensorEntityDescription(
-        key="timer_duration",
-        name="Timer",
+        key=f"{SensorDeviceClass.DURATION}_{UnitOfTime.MINUTES}",
+        name="Timer Duration",
         icon="mdi:clock",
-        unit_of_measurement=UnitOfTime.MINUTES,
-        state_class=SensorDeviceClass.DURATION
-    )
+        device_class=SensorDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.MINUTES
+    ),
 )
 
 
-async def async_setup_entry(hass, entry: ConfigEntry, async_add_devices):
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_devices):
     """Set up the sensor platform."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
     async_add_devices(
