@@ -37,7 +37,7 @@ class AnovaBluetoothClimate(AnovaBluetoothEntity, ClimateEntity):
         self.entity_description = entity_description
         self.coordinator = coordinator
 
-        self._attr_temperature_unit = UnitOfTemperature.FAHRENHEIT
+        self._attr_temperature_unit = UnitOfTemperature.CELSIUS
         self._attr_hvac_modes = [HVAC_MODE_HEAT, HVAC_MODE_OFF]
         self._attr_supported_features = ClimateEntityFeature.TARGET_TEMPERATURE
 
